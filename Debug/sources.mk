@@ -24,5 +24,6 @@ C_DEPS :=
 SUBDIRS := \
 Core/Src \
 Core/Startup \
+Driver/GC9A01/scr \
 Drivers/STM32F1xx_HAL_Driver/Src \
 
