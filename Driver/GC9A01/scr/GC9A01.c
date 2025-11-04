@@ -17,14 +17,27 @@
 #define MEM_WR_CONT         0x3C
 #define ON                  1
 #define OFF                 0
-#define RESET_ON            LL_GPIO_SetOutputPin(RES_GPIO_Port, RES_Pin)
-#define RESET_OFF           LL_GPIO_ResetOutputPin(RES_GPIO_Port, RES_Pin)
-#define DC_ON               LL_GPIO_SetOutputPin(DC_GPIO_Port, DC_Pin)
-#define DC_OFF              LL_GPIO_ResetOutputPin(DC_GPIO_Port, DC_Pin)
-#define CS_ON               LL_GPIO_SetOutputPin(CS_GPIO_Port, CS_Pin)
-#define CS_OFF              LL_GPIO_ResetOutputPin(CS_GPIO_Port, CS_Pin);
+#define RESET_ON            HAL_GPIO_WritePin(RES_GPIO_Port, RES_Pin, GPIO_PIN_SET);
+#define RESET_OFF           HAL_GPIO_WritePin(RES_GPIO_Port, RES_Pin, GPIO_PIN_RESET);
+#define DC_ON               HAL_GPIO_WritePin(DC_GPIO_Port, DC_Pin, GPIO_PIN_SET);
+#define DC_OFF              HAL_GPIO_WritePin(DC_GPIO_Port, DC_Pin, GPIO_PIN_RESET);
+#define CS_ON               HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_SET);
+#define CS_OFF              HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
 
 extern SPI_HandleTypeDef hspi1;
+/////////////////////////////////////////////////////////
+static display_GC9A01_t gThisGCA01 = {
+		.initialized = false,
+};
+
+
+
+static inline void GC9A01_set_chip_select(bool on)
+{
+	HAL_GPIO_WritePin(gThisGCA01.gpio.portCS, gThisGCA01.gpio.pinCS, on ? GPIO_PIN_SET : GPIO_PIN_RESET);
+}
+
+/////////////////////////////////////////////////////////
 
 void GC9A01_spi_tx(uint8_t *data, size_t len) {
     HAL_SPI_Transmit(&hspi1, data, len, 100);
@@ -46,26 +59,19 @@ void GC9A01_set_data_command(uint8_t val) {
     }
 }
 
-void GC9A01_set_chip_select(uint8_t val) {
-    if (val==0) {
-        CS_OFF;
-    } else {
-        CS_ON;
-    }
-}
 
 void GC9A01_write_command(uint8_t cmd) {
     GC9A01_set_data_command(OFF);
-    GC9A01_set_chip_select(OFF);
+    GC9A01_set_chip_select(false);
     GC9A01_spi_tx(&cmd, sizeof(cmd));
-    GC9A01_set_chip_select(ON);
+    GC9A01_set_chip_select(true);
 }
 
 void GC9A01_write_data(uint8_t *data, size_t len) {
     GC9A01_set_data_command(ON);
-    GC9A01_set_chip_select(OFF);
+    GC9A01_set_chip_select(false);
     GC9A01_spi_tx(data, len);
-    GC9A01_set_chip_select(ON);
+    GC9A01_set_chip_select(true);
 }
 
 static inline void GC9A01_write_byte(uint8_t val) {
@@ -82,14 +88,37 @@ void GC9A01_write_continue(uint8_t *data, size_t len) {
     GC9A01_write_data(data, len);
 }
 
+
+
+
+ErrorStatus display_GC9A01_init(display_GC9A01_init_t* pInit)
+{
+	gThisGCA01.ResolutionX = pInit->ResolutionX;
+	gThisGCA01.ResolutionY = pInit->ResolutionY;
+	gThisGCA01.pSPI = pInit->pSPI;
+	gThisGCA01.gpio.portCS = pInit->gpio.portCS;
+	gThisGCA01.gpio.pinCS = (1 << pInit->gpio.pinCS);
+	gThisGCA01.gpio.portDC = pInit->gpio.portDC;
+	gThisGCA01.gpio.pinDC = (1 << pInit->gpio.pinDC);
+	gThisGCA01.gpio.portRST = pInit->gpio.portRST;
+	gThisGCA01.gpio.pinRST = (1 << pInit->gpio.pinRST);
+	gThisGCA01.gpio.portMOSI = pInit->gpio.portMOSI;
+	gThisGCA01.gpio.pinMOSI = (1 << pInit->gpio.pinMOSI);
+	gThisGCA01.gpio.portSCK = pInit->gpio.portSCK;
+	gThisGCA01.gpio.pinSCK = (1 << pInit->gpio.pinSCK);
+	gThisGCA01.initialized = true;
+	GC9A01_init();
+	return SUCCESS;
+}
+
 void GC9A01_init(void) {
 
-    GC9A01_set_chip_select(ON);
-    LL_mDelay(5);
+    GC9A01_set_chip_select(true);
+    HAL_Delay(5);
     GC9A01_set_reset(OFF);
-    LL_mDelay(10);
+    HAL_Delay(10);
     GC9A01_set_reset(ON);
-    LL_mDelay(120);
+    HAL_Delay(120);
 
     /* Initial Sequence */
 
@@ -331,9 +360,9 @@ void GC9A01_init(void) {
     GC9A01_write_command(0x21);
 
     GC9A01_write_command(0x11);
-    LL_mDelay(120);
+    HAL_Delay(120);
     GC9A01_write_command(0x29);
-    LL_mDelay(20);
+    HAL_Delay(20);
 
 }
 
