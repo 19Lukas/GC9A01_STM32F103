@@ -62,7 +62,9 @@ void GC9A01_write_continue(uint8_t *data, size_t len);
 
 void GC9A01_write_data(uint8_t *data, size_t len);
 void GC9A01_write_command(uint8_t cmd);
-
+void GC9A01_write_dataDMA(uint8_t *data, size_t len);
+void GC9A01_writeDMA(uint8_t *data, size_t len);
+void GC9A01_write_continueDMA(uint8_t *data, size_t len);
 
 #ifdef __cplusplus
 }

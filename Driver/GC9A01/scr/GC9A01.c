@@ -51,6 +51,10 @@ static inline void display_setDC(bool set)
 }
 
 /////////////////////////////////////////////////////////
+static void display_transmitDMA(uint8_t *data, size_t len)
+{
+	HAL_SPI_Transmit_DMA(gThisGCA01.pSPI, data, len);
+}
 
 void GC9A01_spi_tx(uint8_t *data, size_t len) {
     HAL_SPI_Transmit(&hspi1, data, len, 100);
@@ -71,6 +75,18 @@ void GC9A01_write_data(uint8_t *data, size_t len) {
     display_setCS(true);
 }
 
+void GC9A01_write_commandDMA(uint8_t cmd) {
+	while(gThisGCA01.pSPI->hdmatx->State != HAL_DMA_STATE_READY || gThisGCA01.pSPI->State != HAL_SPI_STATE_READY);
+	display_setDC(false);
+    display_transmitDMA(&cmd, 1);
+}
+
+void GC9A01_write_dataDMA(uint8_t *data, size_t len) {
+	while(gThisGCA01.pSPI->hdmatx->State != HAL_DMA_STATE_READY || gThisGCA01.pSPI->State != HAL_SPI_STATE_READY);
+	display_setDC(true);
+    display_transmitDMA(data, len);
+}
+
 static inline void GC9A01_write_byte(uint8_t val) {
     GC9A01_write_data(&val, sizeof(val));
 }
@@ -83,6 +99,16 @@ void GC9A01_write(uint8_t *data, size_t len) {
 void GC9A01_write_continue(uint8_t *data, size_t len) {
     GC9A01_write_command(MEM_WR_CONT);
     GC9A01_write_data(data, len);
+}
+
+void GC9A01_writeDMA(uint8_t *data, size_t len) {
+    GC9A01_write_commandDMA(MEM_WR);
+    GC9A01_write_dataDMA(data, len);
+}
+
+void GC9A01_write_continueDMA(uint8_t *data, size_t len) {
+    GC9A01_write_commandDMA(MEM_WR_CONT);
+    GC9A01_write_dataDMA(data, len);
 }
 
 

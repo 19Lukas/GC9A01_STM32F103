@@ -97,46 +97,58 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
   display_GC9A01_init(&gDisplayGCA01Init);
-  HAL_NVIC_DisableIRQ(DMA1_Channel1_IRQn);
+  //HAL_NVIC_DisableIRQ(DMA1_Channel1_IRQn);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  const uint8_t subLines = 1;
+  uint8_t lineBuffer[subLines][240][3] __attribute__((aligned(32)));;
+  memset(lineBuffer, 0xFF, sizeof(lineBuffer));
   while (1)
   {
+	  for (int x = 0; x < 240; x+= subLines)
+	  {
+		  for (int subLineIndx = 0; subLineIndx < subLines; subLineIndx++)
+		  {
+			  for (int y = 0; y < 240; y++)
+			  {
+				  if (x < y) {
+					  lineBuffer[subLineIndx][y][2] = 0xFF;
+				  } else {
+					  lineBuffer[subLineIndx][y][2] = 0x00;
+				  }
+			  }
+		  }
+		  if (x == 0)
+			  GC9A01_writeDMA((uint8_t*) lineBuffer, sizeof(lineBuffer));
+		  else
+			  GC9A01_write_continueDMA((uint8_t*) lineBuffer, sizeof(lineBuffer));
+	  }
+	  HAL_Delay(1000);
+	  // Rainbow
 	  uint8_t color[3];
 	  // Triangle
 	  color[0] = 0xFF;
 	  color[1] = 0xFF;
-	  for (int x = 0; x < 240; x++) {
-		  for (int y = 0; y < 240; y++) {
-			  if (x < y) {
-				  color[2] = 0xFF;
-			  } else {
-				  color[2] = 0x00;
-			  }
-			  if (x == 0 && y == 0) {
-				  GC9A01_write(color, sizeof(color));
-			  } else {
-				  GC9A01_write_continue(color, sizeof(color));
-			  }
-		  }
-	  }
-	  HAL_Delay(1000);
-	  // Rainbow
-	 float frequency = 0.026;
-	 for (int x = 0; x < 240; x++) {
+	  float frequency = 0.026;
+	  for (int x = 0; x < 240; x++)
+	  {
 		 color[0] = sin(frequency*x + 0) * 127 + 128;
 		 color[1] = sin(frequency*x + 2) * 127 + 128;
 		 color[2] = sin(frequency*x + 4) * 127 + 128;
-		 for (int y = 0; y < 240; y++) {
-			 if (x == 0 && y == 0) {
+		 for (int y = 0; y < 240; y++)
+		 {
+			 if (x == 0 && y == 0)
+			 {
 				 GC9A01_write(color, sizeof(color));
-			 } else {
+			 }
+			 else
+			 {
 				 GC9A01_write_continue(color, sizeof(color));
 			 }
 		 }
-	 }
+	  }
 	 HAL_Delay(1000);
     /* USER CODE END WHILE */
 
