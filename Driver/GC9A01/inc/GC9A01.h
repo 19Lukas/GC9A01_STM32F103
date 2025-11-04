@@ -3,6 +3,9 @@
 #pragma once
 #include "main.h"
 #include "stdbool.h"
+#include "stdint.h"
+
+
 
 typedef struct
 {
@@ -53,16 +56,7 @@ extern "C" {
 void GC9A01_set_reset(uint8_t val);
 void GC9A01_set_data_command(uint8_t val);
 
-struct GC9A01_point {
-    uint16_t X, Y;
-};
 
-struct GC9A01_frame {
-    struct GC9A01_point start, end;
-};
-
-void GC9A01_init(void);
-void GC9A01_set_frame(struct GC9A01_frame frame);
 void GC9A01_write(uint8_t *data, size_t len);
 void GC9A01_write_continue(uint8_t *data, size_t len);
 

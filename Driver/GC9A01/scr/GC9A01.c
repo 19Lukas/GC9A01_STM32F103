@@ -27,6 +27,9 @@
 
 extern SPI_HandleTypeDef hspi1;
 /////////////////////////////////////////////////////////
+static void display_init(void);
+static void display_SetFrame(uint16_t startX, uint16_t endX, uint16_t startY, uint16_t endY);
+
 static display_GC9A01_t gThisGCA01 = {
 		.initialized = false,
 };
@@ -85,6 +88,7 @@ void GC9A01_write_continue(uint8_t *data, size_t len) {
 
 
 
+
 ErrorStatus display_GC9A01_init(display_GC9A01_init_t* pInit)
 {
 	gThisGCA01.ResolutionX = pInit->ResolutionX;
@@ -92,11 +96,33 @@ ErrorStatus display_GC9A01_init(display_GC9A01_init_t* pInit)
 	gThisGCA01.pSPI = pInit->pSPI;
 	memcpy(&gThisGCA01.gpio, &pInit->gpio, sizeof(display_GC9A01_gpio_t));
 	gThisGCA01.initialized = true;
-	GC9A01_init();
+	display_init();
+	display_SetFrame(0, pInit->ResolutionX, 0, pInit->ResolutionY);
 	return SUCCESS;
 }
 
-void GC9A01_init(void) {
+static void display_SetFrame(uint16_t startX, uint16_t endX, uint16_t startY, uint16_t endY)
+{
+
+    uint8_t data[4];
+
+    GC9A01_write_command(COL_ADDR_SET);
+    data[0] = (startX >> 8) & 0xFF;
+    data[1] = startX & 0xFF;
+    data[2] = (endX >> 8) & 0xFF;
+    data[3] = endX & 0xFF;
+    GC9A01_write_data(data, sizeof(data));
+
+    GC9A01_write_command(ROW_ADDR_SET);
+    data[0] = (startY >> 8) & 0xFF;
+    data[1] = startY & 0xFF;
+    data[2] = (endY >> 8) & 0xFF;
+    data[3] = endY & 0xFF;
+    GC9A01_write_data(data, sizeof(data));
+
+}
+
+static void display_init(void) {
 
 	display_setCS(true);
     HAL_Delay(5);
@@ -351,22 +377,3 @@ void GC9A01_init(void) {
 
 }
 
-void GC9A01_set_frame(struct GC9A01_frame frame) {
-
-    uint8_t data[4];
-
-    GC9A01_write_command(COL_ADDR_SET);
-    data[0] = (frame.start.X >> 8) & 0xFF;
-    data[1] = frame.start.X & 0xFF;
-    data[2] = (frame.end.X >> 8) & 0xFF;
-    data[3] = frame.end.X & 0xFF;
-    GC9A01_write_data(data, sizeof(data));
-
-    GC9A01_write_command(ROW_ADDR_SET);
-    data[0] = (frame.start.Y >> 8) & 0xFF;
-    data[1] = frame.start.Y & 0xFF;
-    data[2] = (frame.end.Y >> 8) & 0xFF;
-    data[3] = frame.end.Y & 0xFF;
-    GC9A01_write_data(data, sizeof(data));
-
-}
