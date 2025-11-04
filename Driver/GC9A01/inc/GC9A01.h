@@ -16,14 +16,14 @@ typedef struct
 	uint8_t pinRST;
 	uint8_t pinMOSI;
 	uint8_t pinSCK;
-}display_GC9A01_gpio_init_t;
+}display_GC9A01_gpio_t;
 
 typedef struct
 {
 	uint16_t ResolutionX;
 	uint16_t ResolutionY;
 	SPI_HandleTypeDef* pSPI;
-	display_GC9A01_gpio_init_t gpio;
+	display_GC9A01_gpio_t gpio;
 }display_GC9A01_init_t;
 
 typedef struct
@@ -31,7 +31,7 @@ typedef struct
 	uint16_t ResolutionX;
 	uint16_t ResolutionY;
 	SPI_HandleTypeDef* pSPI;
-	display_GC9A01_gpio_init_t gpio;
+	display_GC9A01_gpio_t gpio;
 	bool initialized;
 }display_GC9A01_t;
 

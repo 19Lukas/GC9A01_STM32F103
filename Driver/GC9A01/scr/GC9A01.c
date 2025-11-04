@@ -3,6 +3,7 @@
 #include <GC9A01.h>
 #include "stm32f1xx_ll_gpio.h"
 #include "main.h"
+#include "string.h"
 
 #define ORIENTATION 2   // Set the display orientation 0,1,2,3
 
@@ -30,11 +31,20 @@ static display_GC9A01_t gThisGCA01 = {
 		.initialized = false,
 };
 
-
-
-static inline void GC9A01_set_chip_select(bool on)
+static inline void display_setCS(bool set)
 {
-	HAL_GPIO_WritePin(gThisGCA01.gpio.portCS, gThisGCA01.gpio.pinCS, on ? GPIO_PIN_SET : GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(gThisGCA01.gpio.portCS, gThisGCA01.gpio.pinCS, set ? GPIO_PIN_SET : GPIO_PIN_RESET);
+}
+
+static inline void display_setRST(bool set)
+{
+	HAL_GPIO_WritePin(gThisGCA01.gpio.portRST, gThisGCA01.gpio.pinRST, set ? GPIO_PIN_SET : GPIO_PIN_RESET);
+}
+
+
+static inline void display_setDC(bool set)
+{
+	HAL_GPIO_WritePin(gThisGCA01.gpio.portDC, gThisGCA01.gpio.pinDC, set ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 
 /////////////////////////////////////////////////////////
@@ -43,35 +53,19 @@ void GC9A01_spi_tx(uint8_t *data, size_t len) {
     HAL_SPI_Transmit(&hspi1, data, len, 100);
 }
 
-void GC9A01_set_reset(uint8_t val) {
-    if (val==0) {
-        RESET_OFF;
-    } else {
-        RESET_ON;
-    }
-}
-
-void GC9A01_set_data_command(uint8_t val) {
-    if (val==0) {
-        DC_OFF;
-    } else {
-        DC_ON;
-    }
-}
-
 
 void GC9A01_write_command(uint8_t cmd) {
-    GC9A01_set_data_command(OFF);
-    GC9A01_set_chip_select(false);
-    GC9A01_spi_tx(&cmd, sizeof(cmd));
-    GC9A01_set_chip_select(true);
+	display_setDC(false);
+    display_setCS(false);
+    HAL_SPI_Transmit(gThisGCA01.pSPI, &cmd, 1, 100);
+    display_setCS(true);
 }
 
 void GC9A01_write_data(uint8_t *data, size_t len) {
-    GC9A01_set_data_command(ON);
-    GC9A01_set_chip_select(false);
-    GC9A01_spi_tx(data, len);
-    GC9A01_set_chip_select(true);
+	display_setDC(true);
+    display_setCS(false);
+    HAL_SPI_Transmit(gThisGCA01.pSPI, data, len, 100);
+    display_setCS(true);
 }
 
 static inline void GC9A01_write_byte(uint8_t val) {
@@ -96,16 +90,7 @@ ErrorStatus display_GC9A01_init(display_GC9A01_init_t* pInit)
 	gThisGCA01.ResolutionX = pInit->ResolutionX;
 	gThisGCA01.ResolutionY = pInit->ResolutionY;
 	gThisGCA01.pSPI = pInit->pSPI;
-	gThisGCA01.gpio.portCS = pInit->gpio.portCS;
-	gThisGCA01.gpio.pinCS = (1 << pInit->gpio.pinCS);
-	gThisGCA01.gpio.portDC = pInit->gpio.portDC;
-	gThisGCA01.gpio.pinDC = (1 << pInit->gpio.pinDC);
-	gThisGCA01.gpio.portRST = pInit->gpio.portRST;
-	gThisGCA01.gpio.pinRST = (1 << pInit->gpio.pinRST);
-	gThisGCA01.gpio.portMOSI = pInit->gpio.portMOSI;
-	gThisGCA01.gpio.pinMOSI = (1 << pInit->gpio.pinMOSI);
-	gThisGCA01.gpio.portSCK = pInit->gpio.portSCK;
-	gThisGCA01.gpio.pinSCK = (1 << pInit->gpio.pinSCK);
+	memcpy(&gThisGCA01.gpio, &pInit->gpio, sizeof(display_GC9A01_gpio_t));
 	gThisGCA01.initialized = true;
 	GC9A01_init();
 	return SUCCESS;
@@ -113,11 +98,11 @@ ErrorStatus display_GC9A01_init(display_GC9A01_init_t* pInit)
 
 void GC9A01_init(void) {
 
-    GC9A01_set_chip_select(true);
+	display_setCS(true);
     HAL_Delay(5);
-    GC9A01_set_reset(OFF);
+    display_setRST(false);
     HAL_Delay(10);
-    GC9A01_set_reset(ON);
+    display_setRST(true);
     HAL_Delay(120);
 
     /* Initial Sequence */
