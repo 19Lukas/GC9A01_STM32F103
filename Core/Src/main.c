@@ -46,6 +46,7 @@
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_tx;
 
+DMA_HandleTypeDef hdma_memtomem_dma1_channel1;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -103,20 +104,39 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   const uint8_t subLines = 1;
+  const uint8_t objSizeX = 10;
+  const uint8_t objSizeY = 5;
   uint8_t lineBuffer[subLines][240][3] __attribute__((aligned(32)));;
   memset(lineBuffer, 0xFF, sizeof(lineBuffer));
-  while (1)
+  uint8_t objX = 0;
+  uint8_t objY = 120;
+  while (0)
   {
+	  if (objX > 240)
+		  break;
+
 	  for (int x = 0; x < 240; x+= subLines)
 	  {
 		  for (int subLineIndx = 0; subLineIndx < subLines; subLineIndx++)
 		  {
+			  uint8_t tempX = x + subLineIndx;
 			  for (int y = 0; y < 240; y++)
 			  {
 				  if (x < y) {
 					  lineBuffer[subLineIndx][y][2] = 0xFF;
 				  } else {
 					  lineBuffer[subLineIndx][y][2] = 0x00;
+				  }
+				  if ((tempX > objX) && (tempX < objX + objSizeX) && (y > objY) && (y < objY + objSizeY))
+				  {
+					  lineBuffer[subLineIndx][y][0] = 0x00;
+					  lineBuffer[subLineIndx][y][1] = 0x00;
+					  lineBuffer[subLineIndx][y][2] = 0x00;
+				  }
+				  else
+				  {
+					  lineBuffer[subLineIndx][y][0] = 0xFF;
+					  lineBuffer[subLineIndx][y][1] = 0xFF;
 				  }
 			  }
 		  }
@@ -125,34 +145,29 @@ int main(void)
 		  else
 			  GC9A01_write_continueDMA((uint8_t*) lineBuffer, sizeof(lineBuffer));
 	  }
-	  HAL_Delay(1000);
-	  // Rainbow
-	  uint8_t color[3];
-	  // Triangle
-	  color[0] = 0xFF;
-	  color[1] = 0xFF;
-	  float frequency = 0.026;
-	  for (int x = 0; x < 240; x++)
-	  {
-		 color[0] = sin(frequency*x + 0) * 127 + 128;
-		 color[1] = sin(frequency*x + 2) * 127 + 128;
-		 color[2] = sin(frequency*x + 4) * 127 + 128;
-		 for (int y = 0; y < 240; y++)
-		 {
-			 if (x == 0 && y == 0)
-			 {
-				 GC9A01_write(color, sizeof(color));
-			 }
-			 else
-			 {
-				 GC9A01_write_continue(color, sizeof(color));
-			 }
-		 }
-	  }
-	 HAL_Delay(1000);
+	  objX+=10;
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+  }
+
+  display_GC9A01_enableDualData();
+  while(1)
+  {
+
+	  // Rainbow
+	  uint8_t color[3];
+	  float frequency = 0.026;
+	  for (int x = 0; x < 240; x++)
+	  {
+		  color[0] = 0xFF;//sin(frequency*x + 0) * 127 + 128;
+		  color[1] = 0xFF;//sin(frequency*x + 2) * 127 + 128;
+		  color[2] = 0xFF;//sin(frequency*x + 4) * 127 + 128;
+		  for (int y = 0; y < 240; y+=2)
+		  {
+			  display_GC9A01_transmitDualData(color, 3);
+		  }
+	  }
   }
   /* USER CODE END 3 */
 }
@@ -235,12 +250,28 @@ static void MX_SPI1_Init(void)
 
 /**
   * Enable DMA controller clock
+  * Configure DMA for memory to memory transfers
+  *   hdma_memtomem_dma1_channel1
   */
 static void MX_DMA_Init(void)
 {
 
   /* DMA controller clock enable */
   __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* Configure DMA request hdma_memtomem_dma1_channel1 on DMA1_Channel1 */
+  hdma_memtomem_dma1_channel1.Instance = DMA1_Channel1;
+  hdma_memtomem_dma1_channel1.Init.Direction = DMA_MEMORY_TO_MEMORY;
+  hdma_memtomem_dma1_channel1.Init.PeriphInc = DMA_PINC_ENABLE;
+  hdma_memtomem_dma1_channel1.Init.MemInc = DMA_MINC_ENABLE;
+  hdma_memtomem_dma1_channel1.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+  hdma_memtomem_dma1_channel1.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+  hdma_memtomem_dma1_channel1.Init.Mode = DMA_NORMAL;
+  hdma_memtomem_dma1_channel1.Init.Priority = DMA_PRIORITY_VERY_HIGH;
+  if (HAL_DMA_Init(&hdma_memtomem_dma1_channel1) != HAL_OK)
+  {
+    Error_Handler( );
+  }
 
   /* DMA interrupt init */
   /* DMA1_Channel3_IRQn interrupt configuration */

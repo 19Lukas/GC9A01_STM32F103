@@ -5,20 +5,26 @@
 #include "stdbool.h"
 #include "stdint.h"
 
+typedef enum
+{
+	DISPLAY_INTERFACE_4_WIRE_SPI = 0,
+	DISPLAY_INTERFACE_DUAL_DATA = 0b1001, 	//262k, 1 pixel
+}disaply_GC9A01_interface_e;
 
+typedef enum
+{
+	DISPLAY_PIN_CS,
+	DISPLAY_PIN_DC,
+	DISPLAY_PIN_RST,
+	DISPLAY_PIN_MOSI,
+	DISPLAY_PIN_SCK,
+	DISPLAY_PIN_COUNT,
+}display_GC9A01_gpioName_e;
 
 typedef struct
 {
-	GPIO_TypeDef* portCS;
-	GPIO_TypeDef* portDC;
-	GPIO_TypeDef* portRST;
-	GPIO_TypeDef* portSCK;
-	GPIO_TypeDef* portMOSI;
-	uint8_t pinCS;
-	uint8_t pinDC;
-	uint8_t pinRST;
-	uint8_t pinMOSI;
-	uint8_t pinSCK;
+	GPIO_TypeDef* port;
+	uint32_t pin;
 }display_GC9A01_gpio_t;
 
 typedef struct
@@ -26,7 +32,7 @@ typedef struct
 	uint16_t ResolutionX;
 	uint16_t ResolutionY;
 	SPI_HandleTypeDef* pSPI;
-	display_GC9A01_gpio_t gpio;
+	display_GC9A01_gpio_t gpio[DISPLAY_PIN_COUNT];
 }display_GC9A01_init_t;
 
 typedef struct
@@ -34,12 +40,14 @@ typedef struct
 	uint16_t ResolutionX;
 	uint16_t ResolutionY;
 	SPI_HandleTypeDef* pSPI;
-	display_GC9A01_gpio_t gpio;
+	display_GC9A01_gpio_t gpio[DISPLAY_PIN_COUNT];
+	disaply_GC9A01_interface_e interface;
 	bool initialized;
 }display_GC9A01_t;
 
 ErrorStatus display_GC9A01_init(display_GC9A01_init_t* pInit);
-
+ErrorStatus display_GC9A01_enableDualData();
+void display_GC9A01_transmitDualData(uint8_t* data, uint16_t len);
 
 /////////////////////////////////////////////
 #include <stdint.h>

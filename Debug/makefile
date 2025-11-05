@@ -13,6 +13,7 @@ RM := rm -rf
 -include Driver/GC9A01/scr/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
+-include Config/src/subdir.mk
 -include objects.mk
 
 ifneq ($(MAKECMDGOALS),clean)
