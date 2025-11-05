@@ -25,6 +25,7 @@
 #include "GC9A01.h"
 #include "hardware_config.h"
 #include "string.h"
+#include "ssd1306.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -43,6 +44,8 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+I2C_HandleTypeDef hi2c2;
+
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_tx;
 
@@ -56,6 +59,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_SPI1_Init(void);
+static void MX_I2C2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -96,79 +100,24 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_SPI1_Init();
+  MX_I2C2_Init();
   /* USER CODE BEGIN 2 */
-  display_GC9A01_init(&gDisplayGCA01Init);
-  //HAL_NVIC_DisableIRQ(DMA1_Channel1_IRQn);
+  //display_GC9A01_init(&gDisplayGCA01Init);
+  ssd1306_Init();
+  ssd1306_FillRectangle(0, 10, 10, 20, White);
+  ssd1306_UpdateScreen();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  const uint8_t subLines = 1;
-  const uint8_t objSizeX = 10;
-  const uint8_t objSizeY = 5;
-  uint8_t lineBuffer[subLines][240][3] __attribute__((aligned(32)));;
-  memset(lineBuffer, 0xFF, sizeof(lineBuffer));
-  uint8_t objX = 0;
-  uint8_t objY = 120;
-  while (1)
+  while(1)
   {
-	  if (objX > 240)
-		  break;
-
-	  for (int x = 0; x < 240; x+= subLines)
-	  {
-		  for (int subLineIndx = 0; subLineIndx < subLines; subLineIndx++)
-		  {
-			  uint8_t tempX = x + subLineIndx;
-			  for (int y = 0; y < 240; y++)
-			  {
-				  if (x < y) {
-					  lineBuffer[subLineIndx][y][2] = 0xFF;
-				  } else {
-					  lineBuffer[subLineIndx][y][2] = 0x00;
-				  }
-				  if ((tempX > objX) && (tempX < objX + objSizeX) && (y > objY) && (y < objY + objSizeY))
-				  {
-					  lineBuffer[tempX][y][0] = 0x00;
-					  lineBuffer[tempX][y][1] = 0x00;
-					  lineBuffer[tempX][y][2] = 0x00;
-				  }
-				  else
-				  {
-					  lineBuffer[tempX][y][0] = 0xFF;
-					  lineBuffer[tempX][y][1] = 0xFF;
-				  }
-			  }
-		  }
-		  if (x == 0)
-			  GC9A01_writeDMA((uint8_t*) lineBuffer, sizeof(lineBuffer));
-		  else
-			  GC9A01_write_continueDMA((uint8_t*) lineBuffer, sizeof(lineBuffer));
-	  }
-	  objX+=10;
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
   }
 
-  //display_GC9A01_enableDualData();
-  float frequency = 0.026;
-  while(1)
-  {
 
-	  // Rainbow
-	  uint8_t color[3];
-	  for (int x = 0; x < 240; x++)
-	  {
-		  color[0] = sin(frequency*x + 0) * 127 + 128;
-		  color[1] = sin(frequency*x + 2) * 127 + 128;
-		  color[2] = sin(frequency*x + 4) * 127 + 128;
-		  for (int y = 0; y < 240; y+=2)
-		  {
-			  GC9A01_write_continueDMA(color, 3);
-		  }
-	  }
-  }
   /* USER CODE END 3 */
 }
 
@@ -208,6 +157,40 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief I2C2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C2_Init(void)
+{
+
+  /* USER CODE BEGIN I2C2_Init 0 */
+
+  /* USER CODE END I2C2_Init 0 */
+
+  /* USER CODE BEGIN I2C2_Init 1 */
+
+  /* USER CODE END I2C2_Init 1 */
+  hi2c2.Instance = I2C2;
+  hi2c2.Init.ClockSpeed = 100000;
+  hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c2.Init.OwnAddress1 = 0;
+  hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c2.Init.OwnAddress2 = 0;
+  hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C2_Init 2 */
+
+  /* USER CODE END I2C2_Init 2 */
+
 }
 
 /**
@@ -294,6 +277,7 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, DISPLAY_RST_Pin|DISPLAY_DC_Pin, GPIO_PIN_RESET);
