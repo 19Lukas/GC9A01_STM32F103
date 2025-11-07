@@ -26,6 +26,8 @@ Config/src \
 Core/Src \
 Core/Startup \
 Driver/GC9A01/scr \
+Driver/ILI9225/src \
+Driver/NRF24L01P/src \
 Driver/SSD1306/src \
 Drivers/STM32F1xx_HAL_Driver/Src \
 

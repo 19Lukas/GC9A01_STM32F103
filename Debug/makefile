@@ -11,6 +11,8 @@ RM := rm -rf
 -include sources.mk
 -include Drivers/STM32F1xx_HAL_Driver/Src/subdir.mk
 -include Driver/SSD1306/src/subdir.mk
+-include Driver/NRF24L01P/src/subdir.mk
+-include Driver/ILI9225/src/subdir.mk
 -include Driver/GC9A01/scr/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk

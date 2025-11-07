@@ -26,11 +26,13 @@
 #include "hardware_config.h"
 #include "string.h"
 #include "ssd1306.h"
+#include "ssd1306_fonts.h"
+#include "nrf24l01p.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -47,6 +49,7 @@
 I2C_HandleTypeDef hi2c2;
 
 SPI_HandleTypeDef hspi1;
+SPI_HandleTypeDef hspi2;
 DMA_HandleTypeDef hdma_spi1_tx;
 
 DMA_HandleTypeDef hdma_memtomem_dma1_channel1;
@@ -60,12 +63,41 @@ static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_I2C2_Init(void);
+static void MX_SPI2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+static void drawBatterySymbol()
+{
+	ssd1306_DrawRectangle(0, 0, 20, 11, White);
+	ssd1306_FillRectangle(20, 2, 22, 9, White);
+	ssd1306_DrawRectangle(22, 3, 23, 8, White);
+	ssd1306_SetCursor(1, 2);
+	char test1[] = {"100"};
+	char test2[] = {"20"};
+	while(1)
+	{
+		ssd1306_DrawRectangle(0, 0, 20, 11, White);
+		ssd1306_FillRectangle(20, 2, 22, 9, White);
+		ssd1306_DrawRectangle(22, 3, 23, 8, White);
+		ssd1306_SetCursor(1, 2);
+		ssd1306_WriteString(test1, Font_6x8, White);
+		ssd1306_UpdateScreen();
+		ssd1306_Fill(Black);
+
+		ssd1306_DrawRectangle(0, 0, 20, 11, White);
+		ssd1306_FillRectangle(20, 2, 22, 9, White);
+		ssd1306_DrawRectangle(22, 3, 23, 8, White);
+		ssd1306_SetCursor(5, 2);
+		ssd1306_WriteString(test2, Font_6x8, White);
+		ssd1306_UpdateScreen();
+		ssd1306_Fill(Black);
+	}
+}
 
 /* USER CODE END 0 */
 
@@ -101,17 +133,31 @@ int main(void)
   MX_DMA_Init();
   MX_SPI1_Init();
   MX_I2C2_Init();
+  MX_SPI2_Init();
   /* USER CODE BEGIN 2 */
   //display_GC9A01_init(&gDisplayGCA01Init);
-  ssd1306_Init();
-  ssd1306_FillRectangle(0, 10, 10, 20, White);
-  ssd1306_UpdateScreen();
+  //ssd1306_Init();
+  //drawBatterySymbol();
+  nrf24l01p_tx_init(2400, _250kbps);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  uint8_t tx_data[NRF24L01P_PAYLOAD_LENGTH] = {0, 1, 2, 3, 4, 5, 6, 7};
+  uint8_t rx_data[NRF24L01P_PAYLOAD_LENGTH] = {};
+  memset(rx_data, 0, sizeof(rx_data));
   while(1)
   {
+	  // change tx datas
+	  for(int i= 0; i < 8; i++)
+		  tx_data[i]++;
+
+	  // transmit
+	  nrf24l01p_tx_transmit(tx_data);
+	  HAL_Delay(100);
+
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -216,7 +262,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_HARD_OUTPUT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -228,6 +274,44 @@ static void MX_SPI1_Init(void)
   /* USER CODE BEGIN SPI1_Init 2 */
 
   /* USER CODE END SPI1_Init 2 */
+
+}
+
+/**
+  * @brief SPI2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_SPI2_Init(void)
+{
+
+  /* USER CODE BEGIN SPI2_Init 0 */
+
+  /* USER CODE END SPI2_Init 0 */
+
+  /* USER CODE BEGIN SPI2_Init 1 */
+
+  /* USER CODE END SPI2_Init 1 */
+  /* SPI2 parameter configuration*/
+  hspi2.Instance = SPI2;
+  hspi2.Init.Mode = SPI_MODE_MASTER;
+  hspi2.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi2.Init.NSS = SPI_NSS_SOFT;
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
+  hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi2.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN SPI2_Init 2 */
+
+  /* USER CODE END SPI2_Init 2 */
 
 }
 
@@ -280,14 +364,34 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, DISPLAY_RST_Pin|DISPLAY_DC_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, DISPLAY_RST_Pin|DISPLAY_DC_Pin|NRF2_CE_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : DISPLAY_RST_Pin DISPLAY_DC_Pin */
-  GPIO_InitStruct.Pin = DISPLAY_RST_Pin|DISPLAY_DC_Pin;
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(NRF2_CS_GPIO_Port, NRF2_CS_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : DISPLAY_RST_Pin DISPLAY_DC_Pin NRF2_CE_Pin */
+  GPIO_InitStruct.Pin = DISPLAY_RST_Pin|DISPLAY_DC_Pin|NRF2_CE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : NRF2_CS_Pin */
+  GPIO_InitStruct.Pin = NRF2_CS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(NRF2_CS_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : NRF2_IRQ_Pin */
+  GPIO_InitStruct.Pin = NRF2_IRQ_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(NRF2_IRQ_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
@@ -296,6 +400,11 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	if(GPIO_Pin == NRF24L01P_IRQ_PIN_NUMBER)
+		nrf24l01p_tx_irq(); // clear interrupt flag
+}
 /* USER CODE END 4 */
 
 /**

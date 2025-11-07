@@ -71,6 +71,19 @@ void Error_Handler(void);
 #define OLED_SCL_GPIO_Port GPIOB
 #define OLED_SDA_Pin GPIO_PIN_11
 #define OLED_SDA_GPIO_Port GPIOB
+#define NRF2_CS_Pin GPIO_PIN_12
+#define NRF2_CS_GPIO_Port GPIOB
+#define NRF2_SCK_Pin GPIO_PIN_13
+#define NRF2_SCK_GPIO_Port GPIOB
+#define NRF2_MISO_Pin GPIO_PIN_14
+#define NRF2_MISO_GPIO_Port GPIOB
+#define NRF2_MOSI_Pin GPIO_PIN_15
+#define NRF2_MOSI_GPIO_Port GPIOB
+#define NRF2_CE_Pin GPIO_PIN_8
+#define NRF2_CE_GPIO_Port GPIOA
+#define NRF2_IRQ_Pin GPIO_PIN_9
+#define NRF2_IRQ_GPIO_Port GPIOA
+#define NRF2_IRQ_EXTI_IRQn EXTI9_5_IRQn
 
 /* USER CODE BEGIN Private defines */
 
